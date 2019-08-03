@@ -26,6 +26,7 @@
             <table id="cardList">
                 <thead>
                     <tr>
+                        <th>Select</th>
                         <th>Id</th>
                         <th>Name</th>
                         <th>Delete</th>
@@ -34,18 +35,12 @@
                 <tbody>
                 </tbody>
             </table>
-            
-            <form id="addCardForm">
-                <input type="text" name="name" placeholder="Name">
-                <input type="text" name="desc" placeholder="a cantrip that...">
-                    
-            </form>
-            <button type="button" onclick="addCard()">Add Card</button>
+            <button type="button" onclick="entrypoints.newCard()">Add Card</button>
             <button type="button" onclick="clearList()">Clear List</button>
             <form id="importForm">
                 <input type="text" name="url" placeholder="https://shardofhonor.github.io/dominion-card-generator/index.html...">
             </form>
-            <button type="button" onclick="importFromUrl()">Import</button>
+            <button type="button" onclick="entrypoints.importFromUrl()">Import</button>
         </div>
         <div class="columnRight">
                 <table id="table">

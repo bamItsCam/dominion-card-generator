@@ -1,9 +1,22 @@
-[
-    "uniqueCardKey": {
-        "cardName": "Village",
-        "cardType": "portrait"
-    },
-    "anotherUniqueCardKey1": {
-        "cardName": "Militia"
-    }
-]
+{
+    "boldkeys": "",
+    "color0": "0",
+    "color1": "0"
+    "color2split": "1",
+    "creator": "",
+    "credit": "",
+    "custom-icon": "",
+    "description": "Place a card onto the deck of the player to your left. Without revealing, they must decide to keep it or place it onto their left neighbor's deck. Repeat until a player decides to keep the card or the card returns to you. If the latter, discard it and gain a copy to your hand.",
+    "expansion": "",
+    "id": "cardId_1564868348110",
+    "picture": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Stuck_Circle_dancing.jpg",
+    "picture-x": "0.51",
+    "picture-y": "-1",
+    "picture-zoom": "1.2",
+    "preview": "",
+    "price": "$3",
+    "size": "0",
+    "title": "Circle of Trust",
+    "type": "Action",
+    "type2": ""
+}
