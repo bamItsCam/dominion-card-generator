@@ -1,0 +1,30 @@
+{
+  "name": "dominion-card-generator",
+  "version": "1.0.0",
+  "description": "a stab at an electron-based dominion card generator",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bamItsCam/dominion-card-generator.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bamItsCam/dominion-card-generator/issues"
+  },
+  "homepage": "https://github.com/bamItsCam/dominion-card-generator#readme",
+  "devDependencies": {
+    "electron": "^6.0.0",
+    "eslint": "^6.1.0"
+  },
+  "dependencies": {
+    "electron-json-storage": "^4.1.6",
+    "gm": "^1.23.1"
+  }
+}
