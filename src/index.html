@@ -35,15 +35,14 @@
                 <tbody>
                 </tbody>
             </table>
-            <button type="button" onclick="entrypoints.newCard()">Add Card</button>
-            <button type="button" onclick="clearList()">Clear List</button>
+            <button type="button" onclick="entrypoints.clearList()">Clear List</button>
             <form id="importForm">
                 <input type="text" name="url" placeholder="https://shardofhonor.github.io/dominion-card-generator/index.html...">
             </form>
             <button type="button" onclick="entrypoints.importFromUrl()">Import</button>
         </div>
         <div class="columnRight">
-                <table id="table">
+                <table name="cardPreview" class="table">
                     <colgroup>
                         <col>
                     </colgroup>
@@ -85,6 +84,8 @@
                             </ul>
                             <a id="download" target="_blank" title="click to download card image file" download="card.png"><button type="button" onclick="downloadPicture()"><img src="assets/icon-download.png" />Download Card</button></a>
                             <a id="reset" href="?" title="click to reset all fields"><button type="button">Reset</button></a>
+                            <button id="newCardButton" type="button" onclick="entrypoints.newCard()">New</button>
+                            <button id="saveCardButton" type="button" onclick="entrypoints.saveCard()">Save</button>
                         </th>
                         <th colspan="2">Dominion Card Image Generator (<a id="linkToOriginal" href="https://shemitz.net/static/dominion3/" title="click to pass inputs to the original version">Original</a> &amp; <a target="_blank" rel="nofollow" href="http://forum.dominionstrategy.com/index.php?topic=16622.0" title="show discussion, description and announcements in the forum">Discussion</a>) <span class="heading-credits">Extended Version (<a target="_blank" rel="nofollow" href="https://github.com/shardofhonor/dominion-card-generator" title="view source on github and contribute code">Join Development</a>)</span></th>
                     </tr>

@@ -7,18 +7,40 @@ var cardController = {}
 var domService = {}
 var helpers = {}
 
+const emptyCard = {
+    "boldkeys": "",
+    "color0": "0",
+    "color1": "0",
+    "color2split": "1",
+    "creator": "",
+    "credit": "",
+    "custom-icon": "",
+    "description": "",
+    "expansion": "",
+    "picture": "",
+    "picture-x": "",
+    "picture-y": "",
+    "picture-zoom": "",
+    "preview": "",
+    "price": "",
+    "size": "0",
+    "title": "",
+    "type": "",
+    "type2": ""
+}
+
 entrypoints.importFromUrl = function() {
     const form = document.getElementById("importForm")
     var card = getQueryParams(form.elements['url'].value.replace(/.*index\.html/, ""))
-    cardController.upsertCard(card)
+    cardController.updateCard(card)
 }
 
 entrypoints.deleteCard = function(td) {
     cardController.deleteCard(td.parentNode.parentNode.id)
 }
 
-entrypoints.updateCard = function(card) {
-    cardController.upsertCard(card)
+entrypoints.saveCard = function() {
+    cardController.updateCard(domService.getCardFromForm())
 }
 
 entrypoints.clearList = function() {
@@ -26,29 +48,14 @@ entrypoints.clearList = function() {
 }
 
 entrypoints.newCard = function() {
-    var card = {
-        "boldkeys": "",
-        "color0": "0",
-        "color1": "0",
-        "color2split": "1",
-        "creator": "",
-        "credit": "",
-        "custom-icon": "",
-        "description": "",
-        "expansion": "",
-        "picture": "",
-        "picture-x": "",
-        "picture-y": "",
-        "picture-zoom": "",
-        "preview": "",
-        "price": "",
-        "size": "0",
-        "title": "",
-        "type": "",
-        "type2": ""
-    }
-    cardController.upsertCard(card)
+    card = Object.assign({}, emptyCard)
+    cardController.updateCard(card)
 }
+
+entrypoints.init = function() {
+    helpers.refreshCardList()
+}
+
 
 entrypoints.selectCard = function(td) {
     cardController.selectCard(td.parentNode.parentNode.id)
@@ -66,54 +73,58 @@ cardController.clearList = function(){
 }
 
 cardController.selectCard = function(cardId) {
-    storageService.get(cardId, function(error, data) {
+    storageService.get(cardId, function(error, card) {
         if (error) {
             throw error
         }
         else {
-            domService.updateCardPreview(data)
+            domService.loadCardPreview(card)
+            domService.updateRowHighlights(cardId)
         }
 
     })
 }
 
-cardController.initList = function() {
-    helpers.refreshCardList()
-}
-
 helpers.refreshCardList = function() {
-    table = document.getElementById("cardList")
-    domService.clearCardList()
-    allStoredCards = storageService.getAll(function(error, data) {
-        if (error) throw error;
-        // place the cardId into each card object as a field, then cast to an array
-        Object.keys(data).map((cardId) => data[cardId].id = cardId)
-        savedCardsArray = Object.values(data)
-        console.log(savedCardsArray)
-        savedCardsArray.forEach((card) => {
-            domService.insertCardIntoList(card)
-        })
+    storageService.getAll(function(error, cards) {
+        if (error) {
+            throw error
+        }
+        else {
+            domService.clearCardList()
+            Object.values(cards).forEach((card) => {
+                domService.upsertCardInList(card)
+            })
+            if (Object.values(cards).length != 0) {
+                firstCard = Object.values(cards)[0]
+                domService.loadCardPreview(firstCard)
+                domService.updateRowHighlights(firstCard.id)
+            }
+            else {
+                domService.loadCardPreview(Object.assign({}, emptyCard))
+            }
+        } 
     })
 }
 
+
 helpers.ensureCardHasId = function(card) {
-    if (card.id == null) {
+    if (card.id == null || card.id == "") {
         var epoch = new Date().getTime()
         card.id = "cardId_" + epoch.toString()
     }
 }
 
-cardController.upsertCard = function(card) {
-    domService.updateCardPreview(card)
-    
+cardController.updateCard = function(card) {
     helpers.ensureCardHasId(card)
-
+    domService.loadCardPreview(card)
     storageService.set(card.id, card, function(error) {
         if (error) {
             throw error
         }
         else {
-            domService.insertCardIntoList(card)
+            domService.upsertCardInList(card)
+            domService.updateRowHighlights(card.id)
         }
     })
 }
@@ -129,13 +140,47 @@ cardController.deleteCard = function(cardId) {
     })
 }
 
+domService.updateRowHighlights = function(cardId) {
+    // reset highlighting for all rows
+    table = document.getElementById("cardList")
+    for (var i = 0, row; row = table.rows[i]; i++) {
+        row.className = "not-highlighted"
+    }
+    document.getElementById(cardId).className = "highlighted"
+}
+
 domService.clearCardList = function() {
+    table = document.getElementById("cardList")
     while(table.rows.length>1) {table.deleteRow(table.rows.length-1);}
 }
 
-domService.insertCardIntoList = function(card) {
+domService.getFirstTrInList = function() {
     table = document.getElementById("cardList")
-    row = table.insertRow(-1)
+    if (table.rows.length <= 1) {
+        return null
+    }
+    else {
+        return table.rows[1]
+    }
+}
+
+domService.upsertCardInList = function(card) {
+    table = document.getElementById("cardList")
+    oldRow = document.getElementById(card.id)
+    if (oldRow != null) {
+        console.log(oldRow)
+        console.log(Object.assign({}, card))
+        oldIndex = oldRow.rowIndex
+        oldClass = oldRow.className
+        oldRow.parentNode.removeChild(oldRow)
+        //console.log(oldIndex)
+        row = table.insertRow(oldIndex)
+        row.className = oldClass
+    }
+    else {
+        console.log("hit")
+        row = table.insertRow(-1)
+    }
     var selC = row.insertCell(0)
     var idC = row.insertCell(1)
     var nameC = row.insertCell(2)
@@ -147,18 +192,51 @@ domService.insertCardIntoList = function(card) {
     delC.innerHTML = '<td><button type="button" onclick="entrypoints.deleteCard(this)">X</button></td>'
 }
 
-domService.deleteCard = function(cardId) {
-    var row = document.getElementById(cardId);
-    row.parentNode.removeChild(row);
-    //document.getElementById("cardList").deleteRow(td.parentNode.parentNode.rowIndex)
+domService.getCardFromForm = function() {
+    var card = {
+        "id": document.getElementsByName("cardPreview")[0].getAttribute('data-cardId').toString(),
+        "boldkeys": document.getElementById("boldkeys").value.toString(),
+        "color0": normalColorDropdowns[0].selectedIndex.toString(),
+        "color1": normalColorDropdowns[1].selectedIndex.toString(),
+        "color2split": document.getElementById("color2split").value.toString(),
+        "creator": document.getElementById("creator").value.toString(),
+        "credit": document.getElementById("credit").value.toString(),
+        "custom-icon": document.getElementById("custom-icon").value.toString(),
+        "description": document.getElementById("description").value.toString(),
+        "expansion": document.getElementById("expansion").value.toString(),
+        "picture": document.getElementById("picture").value.toString(),
+        "picture-x": document.getElementById("picture-x").value.toString(),
+        "picture-y": document.getElementById("picture-y").value.toString(),
+        "picture-zoom": document.getElementById("picture-zoom").value.toString(),
+        "preview": document.getElementById("preview").value.toString(),
+        "price": document.getElementById("price").value.toString(),
+        "size": templateSize.toString(),
+        "title": document.getElementById("title").value.toString(),
+        "type": document.getElementById("type").value.toString(),
+        "type2": document.getElementById("type2").value.toString()
+    }
+    return card
 }
 
-domService.updateCardPreview = function(card) {
+domService.deleteCard = function(cardId) {
+    var row = document.getElementById(cardId)
+    row.parentNode.removeChild(row)
+    table = document.getElementById("cardList")
+    if (table.rows.length <= 1) {
+
+    }
+}
+
+domService.loadCardPreview = function(card) {
     //
     //var query = getQueryParams(form.elements['url'].value.replace(/.*index\.html/, ""))
     console.log(card)
     for (var cardKey in card) {
         switch (cardKey) {
+            case "id":
+                previewTable = document.getElementsByName("cardPreview")[0]
+                previewTable.setAttribute('data-cardId', card.id)
+                break
             case "color0":
                 normalColorCurrentIndices[0] = normalColorDropdowns[0].selectedIndex = card[cardKey];
                 break;
@@ -223,7 +301,7 @@ domService.updateCardPreview = function(card) {
 
 // Initialization of complete logic on load of page
 //window.addEventListener('load', function() {
-cardController.initList()
+entrypoints.init()
 
 //these three can all be expanded as you see fit
 var icons = {//the names should match the image filenames (plus a .png extension).
@@ -318,8 +396,7 @@ var normalColorCurrentIndices = [0,0];
 var recoloredImages = [];
 
 function draw() {
-    console.log("hi!!")
-    
+    console.log("drawing...")    
     function getRecoloredImage(imageID, colorID, offset) {
         if (!recoloredImages[imageID]) { //http://stackoverflow.com/questions/1445862/possible-to-use-html-images-like-canvas-with-getimagedata-putimagedata
             var cnvs = document.createElement("canvas");
@@ -986,8 +1063,8 @@ function draw() {
 
     //finish up
     //context.restore();
-    
-    updateURL();
+    //entrypoints.saveCardFromPreview()
+    //updateURL();
 
     document.getElementById("load-indicator").setAttribute("style", "display:none;");
     canvases[0].parentNode.removeAttribute("data-status");

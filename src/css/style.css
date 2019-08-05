@@ -234,10 +234,21 @@ body.size5 #sizes {
     top: 770px;
 }
 
-#reset {
+#newCardButton,
+#saveCardButton {
+    position: absolute;
+    left: 20px;
+    top: 820px;
+}
+
+#reset,
+#saveCardButton {
     left: calc(40px + 9em);
 }
 
+
+#newCardButton,
+#saveCardButton,
 #download button,
 #reset button {
     box-sizing: border-box;
@@ -283,7 +294,7 @@ body.size5 #reset {
     top: calc(770px - 80px);
 }
 
-#table {
+.table {
     border-collapse: collapse;
     width: calc(100% - 160px);
     position: relative;
@@ -293,7 +304,7 @@ body.size5 #reset {
     background-color: var(--color-background3);
 }
 
-#image-positioning table {
+#image-positioning .table {
     margin-top: 20px;
     width: 100%;
     border-collapse: collapse;
@@ -522,4 +533,12 @@ body.size5 #legend {
     flex: 70%;
     padding-top: 10px;
     padding-right: 50px;
+}
+
+#cardList .highlighted {
+    background-color: rgb(255, 153, 255)
+}
+
+#cardList .not-highlighted {
+    background-color: rgb(255, 255, 255)
 }
