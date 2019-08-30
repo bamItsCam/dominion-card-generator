@@ -234,7 +234,6 @@ body.size5 #sizes {
     top: 770px;
 }
 
-#newCardButton,
 #saveCardButton {
     position: absolute;
     left: 20px;
@@ -247,10 +246,7 @@ body.size5 #sizes {
 }
 
 
-#newCardButton,
-#saveCardButton,
-#download button,
-#reset button {
+button {
     box-sizing: border-box;
     background: var(--color-button1-background);
     border: none;
@@ -372,6 +368,11 @@ label[for=type2]:after {
 
 body.size2 label[for=type2]:after {
     content: "Type";
+}
+
+.fullwidthInput>div {
+    width: calc(200% + 5px);
+    box-sizing: border-box;
 }
 
 body.size3 .hideForBaseCards,
@@ -536,9 +537,80 @@ body.size5 #legend {
 }
 
 #cardList .highlighted {
-    background-color: rgb(255, 153, 255)
+    background-color: var(--color-background2);
 }
 
 #cardList .not-highlighted {
-    background-color: rgb(255, 255, 255)
+    background-color: var(--color-background1);
 }
+
+.dropbtn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 16px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .dropbtn:hover, .dropbtn:focus {
+    background-color: #3e8e41;
+  }
+  
+  #myInput {
+    box-sizing: border-box;
+    background-image: url('searchicon.png');
+    background-position: 14px 12px;
+    background-repeat: no-repeat;
+    font-size: 16px;
+    padding: 14px 20px 12px 45px;
+    border: none;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  #myInput:focus {outline: 3px solid #ddd;}
+  
+  .dropdown {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f6f6f6;
+    min-width: 230px;
+    overflow: auto;
+    border: 1px solid #ddd;
+    z-index: 1;
+  }
+  
+  .dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+  }
+  
+  .dropdown a:hover {background-color: #ddd;}
+  
+  .show {display: block;}
+
+  .hidden {
+      display: none;
+  }
+
+  #expansionFilter >label,select,input {
+      display: inline;
+      width: auto;
+  }
+
+  .noselect {
+    -webkit-touch-callout: none; /* iOS Safari */
+      -webkit-user-select: none; /* Safari */
+       -khtml-user-select: none; /* Konqueror HTML */
+         -moz-user-select: none; /* Firefox */
+          -ms-user-select: none; /* Internet Explorer/Edge */
+              user-select: none; /* Non-prefixed version, currently
+                                    supported by Chrome and Opera */
+  }

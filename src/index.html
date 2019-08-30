@@ -23,11 +23,19 @@
     <div id="currentUrl"></div>
     <div class="row">
         <div class="columnLeft">
+            <div id="expansionFilter">
+                <span>Filter By Expansion</span>
+                <div class="dropdown">
+                    <select id="expansions-dropdown" onchange="entrypoints.init()"></select>
+                </div>
+            </div>
+            
             <table id="cardList">
                 <thead>
                     <tr>
                         <th>Select</th>
                         <th>Id</th>
+                        <th>Expansion</th>
                         <th>Name</th>
                         <th>Delete</th>
                     </tr>
@@ -40,14 +48,15 @@
                 <input type="text" name="url" placeholder="https://shardofhonor.github.io/dominion-card-generator/index.html...">
             </form>
             <button type="button" onclick="entrypoints.importFromUrl()">Import</button>
+            <button id="newCardButton" type="button" onclick="entrypoints.newCard()">New</button>
         </div>
         <div class="columnRight">
-                <table name="cardPreview" class="table">
+                <table name="cardPreview" class="table hidden">
                     <colgroup>
                         <col>
                     </colgroup>
                     <tr>
-                        <th rowspan="10" data-status="Loading...">
+                        <th rowspan="11" data-status="Loading...">
                             <canvas class="myCanvas" id="portraitCanvas" width="1403" height="2151" title="Right-Click this image for options to save it.">Your browser does not support the &lt;CANVAS&gt; tag.</canvas>
                             <canvas class="myCanvas" id="landscapeCanvas" width="2151" height="1403" title="Right-Click this image for options to save it.">Your browser does not support the &lt;CANVAS&gt; tag.</canvas>
                             <canvas class="myCanvas" id="matCanvas" width="928" height="684" style="transform:scale(0.49);" title="Right-Click this image for options to save it.">Your browser does not support the &lt;CANVAS&gt; tag.</canvas>
@@ -84,10 +93,17 @@
                             </ul>
                             <a id="download" target="_blank" title="click to download card image file" download="card.png"><button type="button" onclick="downloadPicture()"><img src="assets/icon-download.png" />Download Card</button></a>
                             <a id="reset" href="?" title="click to reset all fields"><button type="button">Reset</button></a>
-                            <button id="newCardButton" type="button" onclick="entrypoints.newCard()">New</button>
                             <button id="saveCardButton" type="button" onclick="entrypoints.saveCard()">Save</button>
                         </th>
                         <th colspan="2">Dominion Card Image Generator (<a id="linkToOriginal" href="https://shemitz.net/static/dominion3/" title="click to pass inputs to the original version">Original</a> &amp; <a target="_blank" rel="nofollow" href="http://forum.dominionstrategy.com/index.php?topic=16622.0" title="show discussion, description and announcements in the forum">Discussion</a>) <span class="heading-credits">Extended Version (<a target="_blank" rel="nofollow" href="https://github.com/shardofhonor/dominion-card-generator" title="view source on github and contribute code">Join Development</a>)</span></th>
+                    </tr>
+                    <tr>
+                        <td class="fullwidthInput">
+                            <div>
+                                <label for="expansion">Expansion</label>
+                                <input id="expansion" placeholder="Intrigue" />
+                            </div>
+                        </td>
                     </tr>
                     <tr>
                         <td class="doubledForDoubleCards">
@@ -176,8 +192,8 @@
                         </td>
                         <td class="hideForPileMarker">
                             <div>
-                                <label for="expansion">URL of Expansion Icon</label>
-                                <input id="expansion" type="url" placeholder="http://example.com/expansion.png" />
+                                <label for="expansion-url">URL of Expansion Icon</label>
+                                <input id="expansion-url" type="url" placeholder="http://example.com/expansion.png" />
                             </div>
                         </td>
                     </tr>

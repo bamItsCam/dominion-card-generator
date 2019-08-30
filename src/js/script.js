@@ -16,6 +16,7 @@ const emptyCard = {
     "credit": "",
     "custom-icon": "",
     "description": "",
+    "expansion-url": "",
     "expansion": "",
     "picture": "",
     "picture-x": "",
@@ -32,7 +33,10 @@ const emptyCard = {
 entrypoints.importFromUrl = function() {
     const form = document.getElementById("importForm")
     var card = getQueryParams(form.elements['url'].value.replace(/.*index\.html/, ""))
-    cardController.updateCard(card)
+    var epoch = new Date().getTime()
+    card.id = "cardId_" + epoch.toString()
+    card.expansion = domService.getSelectedExpansion()
+    cardController.updateCard(card, true)
 }
 
 entrypoints.deleteCard = function(td) {
@@ -40,7 +44,10 @@ entrypoints.deleteCard = function(td) {
 }
 
 entrypoints.saveCard = function() {
-    cardController.updateCard(domService.getCardFromForm())
+    var card = domService.getCardFromForm()
+    if (card.id != null) {
+        cardController.updateCard(card, false)
+    }
 }
 
 entrypoints.clearList = function() {
@@ -49,11 +56,14 @@ entrypoints.clearList = function() {
 
 entrypoints.newCard = function() {
     card = Object.assign({}, emptyCard)
-    cardController.updateCard(card)
+    var epoch = new Date().getTime()
+    card.id = "cardId_" + epoch.toString()
+    card.expansion = domService.getSelectedExpansion()
+    cardController.updateCard(card, true)
 }
 
 entrypoints.init = function() {
-    helpers.refreshCardList()
+    helpers.refresh()
 }
 
 
@@ -67,7 +77,7 @@ cardController.clearList = function(){
             throw error;
         }
         else {
-            helpers.refreshCardList()
+            helpers.refresh()
         }
     })
 }
@@ -78,53 +88,22 @@ cardController.selectCard = function(cardId) {
             throw error
         }
         else {
-            domService.loadCardPreview(card)
+            // for simple selection, don't bother refreshing from disk since it's all dom stuff
+            domService.prefillFormForCard(card)
             domService.updateRowHighlights(cardId)
+            domService.displayPreview()
         }
 
     })
 }
 
-helpers.refreshCardList = function() {
-    storageService.getAll(function(error, cards) {
-        if (error) {
-            throw error
-        }
-        else {
-            domService.clearCardList()
-            Object.values(cards).forEach((card) => {
-                domService.upsertCardInList(card)
-            })
-            if (Object.values(cards).length != 0) {
-                firstCard = Object.values(cards)[0]
-                domService.loadCardPreview(firstCard)
-                domService.updateRowHighlights(firstCard.id)
-            }
-            else {
-                domService.loadCardPreview(Object.assign({}, emptyCard))
-            }
-        } 
-    })
-}
-
-
-helpers.ensureCardHasId = function(card) {
-    if (card.id == null || card.id == "") {
-        var epoch = new Date().getTime()
-        card.id = "cardId_" + epoch.toString()
-    }
-}
-
-cardController.updateCard = function(card) {
-    helpers.ensureCardHasId(card)
-    domService.loadCardPreview(card)
+cardController.updateCard = function(card, refresh) {
     storageService.set(card.id, card, function(error) {
         if (error) {
             throw error
         }
         else {
-            domService.upsertCardInList(card)
-            domService.updateRowHighlights(card.id)
+            helpers.refresh(selectedCardId=card.id, refreshPreview=refresh)
         }
     })
 }
@@ -135,9 +114,151 @@ cardController.deleteCard = function(cardId) {
             throw error
         }
         else {
-            domService.deleteCard(cardId)
+            cardWasSelected = domService.isCardSelected(cardId)
+            rowIndex = domService.deleteCard(cardId)
+            if (cardWasSelected && rowIndex < table.rows.length) {
+                console.log("The selected card was deleted")
+                cardToSelect = domService.getCardIdByRowIndex(rowIndex)
+                helpers.refresh(selectedCardId=cardToSelect)
+            }
+            else {
+                // select the first card in the list
+                helpers.refresh()
+            }
         }
     })
+}
+
+helpers.refresh = function(selectedCardId=null, refreshPreview=true) {
+    storageService.getAll(function(error, cards) {
+        if (error) {
+            throw error
+        }
+        else {
+            // Get what's currently selected, then best effort try to keep it highlighted
+            // after the list refresh
+            // selection priority:
+            // 1. Current Card
+            // 2. First card in list
+            if (selectedCardId == null) {
+                selectedIndex = domService.getSelectedCardRowIndex()
+                selectedCardId = domService.getCardIdByRowIndex(selectedIndex)
+            }
+            domService.clearCardList()
+            listOfExpansions = Object.values(cards).map(item => item.expansion).filter((value, index, self) => self.indexOf(value) === index)
+            // remove the possibility of "" from the select dropdown
+            listOfExpansions = listOfExpansions.filter(function(e) { return e != ""})
+
+            selectedExpansion = domService.populateExpansionFilter(listOfExpansions)
+            displayedCardCount = 0
+            Object.values(cards).forEach((card) => {
+                if ("'"+card.expansion+"'" == selectedExpansion || selectedExpansion == "All") {
+                    domService.appendCardToList(card)
+                    displayedCardCount += 1
+                }
+            })
+            // load preview and highlight appropriate card from list
+            if (displayedCardCount != 0) {
+                if (selectedCardId != null && document.getElementById(selectedCardId) != null) {
+                    // if provided a card to hightlight, highlight it
+                    cardToSelect = cards[selectedCardId]
+                }
+                else {
+                    selectedCardId = domService.getCardIdByRowIndex(selectedIndex)
+                    cardToSelect = cards[selectedCardId]
+                }
+                if (refreshPreview) {
+                    // for some codepaths (like saving) it doesn't make sense to refill the form with
+                    // the data we just got from it. This check prevents a refresh loop
+                    domService.prefillFormForCard(cardToSelect)
+                    console.log("refreshed!")
+                }
+                domService.updateRowHighlights(cardToSelect.id)
+                domService.displayPreview()
+            }
+            else {
+                if (refreshPreview) {
+                    domService.hidePreview()
+                    console.log("refreshed!")
+                }
+            }
+        } 
+    })
+}
+
+domService.displayPreview = function() {
+    document.getElementsByName("cardPreview")[0].classList.remove("hidden")
+}
+
+domService.hidePreview = function() {
+    document.getElementsByName("cardPreview")[0].classList.add("hidden")
+}
+
+domService.isPreviewHidden = function() {
+    return "hidden" in document.getElementsByName("cardPreview")[0].classList
+}
+
+domService.getSelectedExpansion = function() {
+    var selection = document.getElementById("expansions-dropdown").value
+    if (selection == "All") {
+        console.log("hi")
+        return ""
+    }
+    return selection.substr(1).substr(0, selection.length-2)
+}
+
+domService.populateExpansionFilter = function(expansions) {
+    dropdown = document.getElementById("expansions-dropdown")
+    selectedExpansion = dropdown.value
+    while(dropdown.firstChild) {
+        dropdown.removeChild(dropdown.firstChild)
+    }
+    var option = document.createElement("option")
+    option.textContent = "All"
+    dropdown.appendChild(option)
+    for (var i=0; i < expansions.length; ++i) {
+        var option = document.createElement("option")
+        option.textContent = "'"+expansions[i]+"'"
+        dropdown.appendChild(option)
+        if (option.textContent == selectedExpansion) {
+            dropdown.selectedIndex = option.index
+        }
+    }
+    return dropdown.value
+}
+
+domService.deleteCard = function(cardId) {
+    var row = document.getElementById(cardId)
+    var rowIndex = row.rowIndex
+    row.parentNode.removeChild(row)
+    table = document.getElementById("cardList")
+    return rowIndex
+}
+
+domService.getSelectedCardRowIndex = function() {
+    table = document.getElementById("cardList")
+    for (var i = 1, row; row = table.rows[i]; i++) {
+        if (! row.className.includes("not-highlighted")) {
+            return row.rowIndex
+        }
+    }
+    return 1 // default to 1st in list if no selection found
+}
+
+domService.isCardSelected = function(cardId) {
+    tr = document.getElementById(cardId)
+    return ! tr.className.includes("not-highlighted")
+}
+
+domService.getCardIdByRowIndex = function(i) {
+    table = document.getElementById("cardList")
+    if (table.rows.length <= 1) {
+        return null
+    }
+    else if (i >= table.rows.length ) {
+        return table.rows[1].id
+    }
+    return table.rows[i].id
 }
 
 domService.updateRowHighlights = function(cardId) {
@@ -154,47 +275,25 @@ domService.clearCardList = function() {
     while(table.rows.length>1) {table.deleteRow(table.rows.length-1);}
 }
 
-domService.getFirstTrInList = function() {
+domService.appendCardToList = function(card) {
     table = document.getElementById("cardList")
-    if (table.rows.length <= 1) {
-        return null
-    }
-    else {
-        return table.rows[1]
-    }
-}
-
-domService.upsertCardInList = function(card) {
-    table = document.getElementById("cardList")
-    oldRow = document.getElementById(card.id)
-    if (oldRow != null) {
-        console.log(oldRow)
-        console.log(Object.assign({}, card))
-        oldIndex = oldRow.rowIndex
-        oldClass = oldRow.className
-        oldRow.parentNode.removeChild(oldRow)
-        //console.log(oldIndex)
-        row = table.insertRow(oldIndex)
-        row.className = oldClass
-    }
-    else {
-        console.log("hit")
-        row = table.insertRow(-1)
-    }
+    row = table.insertRow(-1)
     var selC = row.insertCell(0)
     var idC = row.insertCell(1)
-    var nameC = row.insertCell(2)
+    var expC = row.insertCell(2)
+    var nameC = row.insertCell(3)
     var delC = row.insertCell(-1)
     row.id = card.id
     selC.innerHTML = '<td><button type="button" onclick="entrypoints.selectCard(this)">Select</button></td>'
     idC.innerHTML = card.id
+    expC.innerHTML = card.expansion
     nameC.innerHTML = card.title
     delC.innerHTML = '<td><button type="button" onclick="entrypoints.deleteCard(this)">X</button></td>'
 }
 
 domService.getCardFromForm = function() {
     var card = {
-        "id": document.getElementsByName("cardPreview")[0].getAttribute('data-cardId').toString(),
+        "id": document.getElementsByName("cardPreview")[0].getAttribute('data-cardId'),
         "boldkeys": document.getElementById("boldkeys").value.toString(),
         "color0": normalColorDropdowns[0].selectedIndex.toString(),
         "color1": normalColorDropdowns[1].selectedIndex.toString(),
@@ -203,6 +302,7 @@ domService.getCardFromForm = function() {
         "credit": document.getElementById("credit").value.toString(),
         "custom-icon": document.getElementById("custom-icon").value.toString(),
         "description": document.getElementById("description").value.toString(),
+        "expansion-url": document.getElementById("expansion-url").value.toString(),
         "expansion": document.getElementById("expansion").value.toString(),
         "picture": document.getElementById("picture").value.toString(),
         "picture-x": document.getElementById("picture-x").value.toString(),
@@ -218,23 +318,12 @@ domService.getCardFromForm = function() {
     return card
 }
 
-domService.deleteCard = function(cardId) {
-    var row = document.getElementById(cardId)
-    row.parentNode.removeChild(row)
-    table = document.getElementById("cardList")
-    if (table.rows.length <= 1) {
-
-    }
-}
-
-domService.loadCardPreview = function(card) {
-    //
-    //var query = getQueryParams(form.elements['url'].value.replace(/.*index\.html/, ""))
-    console.log(card)
+domService.prefillFormForCard = function(card) {
+    previewTable = document.getElementsByName("cardPreview")[0]
+    previewTable.removeAttribute('data-cardId')
     for (var cardKey in card) {
         switch (cardKey) {
             case "id":
-                previewTable = document.getElementsByName("cardPreview")[0]
                 previewTable.setAttribute('data-cardId', card.id)
                 break
             case "color0":
@@ -278,7 +367,7 @@ domService.loadCardPreview = function(card) {
     }
     //set the illustration's Source properly and also call queueDraw.
     document.getElementById("picture").onchange(); 
-    document.getElementById("expansion").onchange();
+    document.getElementById("expansion-url").onchange();
     document.getElementById("custom-icon").onchange();
             
     //adjust page title
@@ -1063,7 +1152,7 @@ function draw() {
 
     //finish up
     //context.restore();
-    //entrypoints.saveCardFromPreview()
+    entrypoints.saveCard()
     //updateURL();
 
     document.getElementById("load-indicator").setAttribute("style", "display:none;");
@@ -1085,7 +1174,7 @@ function updateURL() {
             arguments += simpleOnChangeButOnlyForSize2InputFieldIDs[i] + "=" + encodeURIComponent(document.getElementById(simpleOnChangeButOnlyForSize2InputFieldIDs[i]).value) + "&";
     }
     arguments += "picture=" + encodeURIComponent(document.getElementById("picture").value) + "&";
-    arguments += "expansion=" + encodeURIComponent(document.getElementById("expansion").value) + "&";
+    arguments += "expansion=" + encodeURIComponent(document.getElementById("expansion-url").value) + "&";
     arguments += "custom-icon=" + encodeURIComponent(document.getElementById("custom-icon").value);
     for (var i = 0; i < normalColorDropdowns.length; ++i) {
         switch (normalColorCustomIndices[i] - normalColorDropdowns[i].selectedIndex) {
@@ -1203,7 +1292,7 @@ for (var i = 0; i < sources.length; i++) {
     images[i].src = "card-resources/"+sources[i];
 }
 
-var simpleOnChangeInputFieldIDs = ["title", "description", "type", "credit", "creator", "price", "preview", "type2", "color2split", "boldkeys", "picture-x", "picture-y", "picture-zoom"];
+var simpleOnChangeInputFieldIDs = ["expansion", "title", "description", "type", "credit", "creator", "price", "preview", "type2", "color2split", "boldkeys", "picture-x", "picture-y", "picture-zoom"];
 var simpleOnChangeButOnlyForSize2InputFieldIDs = ["title2", "description2"];
 for (var i = 0; i < simpleOnChangeInputFieldIDs.length; ++i) {
     document.getElementById(simpleOnChangeInputFieldIDs[i]).onchange = queueDraw;
@@ -1255,7 +1344,7 @@ function onChangeExternalImage(id, value, maxWidth, maxHeight) {
 document.getElementById("picture").onchange = function() {
     onChangeExternalImage(5, this.value);
 };
-document.getElementById("expansion").onchange = function() {
+document.getElementById("expansion-url").onchange = function() {
     onChangeExternalImage(17, this.value);
 };
     
